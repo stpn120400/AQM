@@ -144,17 +144,17 @@ aqicalc:
 }
 
 void get_aqi_status() {
-  if (PM2_5 <= 50) {
+  if (PM25_aqival <= 50) {
     aqi_status = "Good";
-  } else if (PM2_5 >= 51 && PM2_5 <= 100) {
+  } else if (PM25_aqival >= 51 && PM25_aqival <= 100) {
     aqi_status = "Moderate";
-  } else if (PM2_5 >= 101 && PM2_5 <= 150) {
+  } else if (PM25_aqival >= 101 && PM25_aqival <= 150) {
     aqi_status = "Unhealthy for Sensitive Groups";
-  } else if (PM2_5 >= 151 && PM2_5 <= 200) {
+  } else if (PM25_aqival >= 151 && PM25_aqival <= 200) {
     aqi_status = "Unhealthys";
-  } else if (PM2_5 >= 201 && PM2_5 <= 300) {
+  } else if (PM25_aqival >= 201 && PM25_aqival <= 300) {
     aqi_status = "Very Unhealthy";
-  } else if (PM2_5 >= 300) {
+  } else if (PM25_aqival >= 300) {
     aqi_status = "Hazardous";
   }
 }
