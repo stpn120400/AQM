@@ -7,19 +7,30 @@
   Wendam, Sandra                
 */
 
-//Last UPDATE: April 26, 2023
+//Last UPDATE: April 27, 2023 - MQ7 adding
 
 #include <WiFi.h>
 #include <WiFiClientSecure.h>
 #include <HTTPClient.h>
 #include "DHT.h"
 #include "Adafruit_Sensor.h"
-#define RXD2 16  // to sensor TX
-#define TXD2 17  // to sensor RX
+#include <MQUnifiedsensor.h>
+
+//Definitions
+#define placa "ESP32 "
+#define Voltage_Resolution 5
+#define pin 34 //Analog input 0 of your arduino
+#define type "MQ-7" //MQ7
+#define ADC_Bit_Resolution 12 // For arduino UNO/MEGA/NANO
+#define RatioMQ7CleanAir 27.5 //RS / R0 = 27.5 ppm 
+#define RXD2 16  // to sensor TX Blue
+#define TXD2 17  // to sensor RX Green
 #define DHT11PIN 18
 #define pmsSerial Serial1
+#define mqSerial Serial2
 
-
+//Declare Sensor
+MQUnifiedsensor MQ7(placa, Voltage_Resolution, ADC_Bit_Resolution, pin, type);
 DHT dht(DHT11PIN, DHT11);
 
 const char* ssid = "Denzel_HomeNet";
@@ -260,11 +271,59 @@ void setup() {
   // Wait to allow sensors to get ready
   delay(2000);
 
+  //start MQ7 Sensor
+  mqSerial.begin(9600);
+
   //start DHT11 Sensor
   dht.begin();
 
   // Set up UART connection
   pmsSerial.begin(9600, SERIAL_8N1, RXD2, TXD2);
+
+  MQ7.setRegressionMethod(1); //_PPM =  a*ratio^b
+  MQ7.setA(99.042); MQ7.setB(-1.518); // Configure the equation to calculate CO concentration value
+
+    /*
+    Exponential regression:
+  GAS     | a      | b
+  H2      | 69.014  | -1.374
+  LPG     | 700000000 | -7.703
+  CH4     | 60000000000000 | -10.54
+  CO      | 99.042 | -1.518
+  Alcohol | 40000000000000000 | -12.35
+  */
+  
+  /*****************************  MQ Init ********************************************/ 
+  //Remarks: Configure the pin of arduino as input.
+  /************************************************************************************/ 
+  MQ7.init(); 
+  /* 
+    //If the RL value is different from 10K please assign your RL value with the following method:
+    MQ7.setRL(10);
+  */
+  
+  /*****************************  MQ CAlibration ********************************************/ 
+  // Explanation: 
+   // In this routine the sensor will measure the resistance of the sensor supposedly before being pre-heated
+  // and on clean air (Calibration conditions), setting up R0 value.
+  // We recomend executing this routine only on setup in laboratory conditions.
+  // This routine does not need to be executed on each restart, you can load your R0 value from eeprom.
+  // Acknowledgements: https://jayconsystems.com/blog/understanding-a-gas-sensor
+  Serial.print("Calibrating please wait.");
+  float calcR0 = 0;
+  for(int i = 1; i<=10; i ++)
+  {
+    MQ7.update(); // Update data, the arduino will read the voltage from the analog pin
+    calcR0 += MQ7.calibrate(RatioMQ7CleanAir);
+    Serial.print(".");
+  }
+  MQ7.setR0(calcR0/10);
+  Serial.println("  done!.");
+  
+  if(isinf(calcR0)) {Serial.println("Warning: Conection issue, R0 is infinite (Open circuit detected) please check your wiring and supply"); while(1);}
+  if(calcR0 == 0){Serial.println("Warning: Conection issue found, R0 is zero (Analog pin shorts to ground) please check your wiring and supply"); while(1);}
+  /*****************************  MQ CAlibration ********************************************/ 
+  MQ7.serialDebug(true);
 
   //Connect to Wifi Network
   connect_WiFi();
@@ -282,6 +341,10 @@ void loop() {
   float temperature = 0.00;
   float CO_ppm = 0.00;
 
+  //Reading MQ7 Data
+  MQ7.update(); // Update data, the arduino will read the voltage from the analog pin
+  CO_ppm = MQ7.readSensor(); // Sensor will read PPM concentration using the model, a and b values set previously or from the setup
+
   //Reading PMS5003 Data
   get_PMS5003_sensor_data(&PM1, &PM2_5, &PM10);
 
@@ -295,6 +358,8 @@ void loop() {
   const char* aqi_status = get_aqi_status(PM25_aqival);
   Serial.print("AQI Status: ");
   Serial.println(aqi_status);
+  Serial.print("CO Concentration (PPM): ");
+  Serial.println(CO_ppm);
   Serial.println();
 
   //Check WiFi connection status
@@ -341,6 +406,11 @@ void loop() {
     pmsSerial.read();
     pmsSerial.end();
     pmsSerial.begin(9600, SERIAL_8N1, RXD2, TXD2);
+  }
+  while (mqSerial.available()) {
+    mqSerial.read();
+    mqSerial.end();
+    mqSerial.begin(9600);
   }
 
   delay(20000);  //20 seconds delay before sending new data
