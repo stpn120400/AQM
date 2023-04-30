@@ -25,7 +25,7 @@
 #define RatioMQ7CleanAir 27.5 //RS / R0 = 27.5 ppm 
 #define RXD2 16  // to sensor TX Blue
 #define TXD2 17  // to sensor RX Green
-#define DHT11PIN 18
+#define DHT11PIN 18 // Change to pin 35
 #define pmsSerial Serial1
 #define mqSerial Serial2
 
