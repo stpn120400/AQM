@@ -7,7 +7,8 @@
   Wendam, Sandra                
 */
 
-//Last UPDATE: April 27, 2023 - MQ7 adding
+//Last Line Edit: April 27, 2023 - MQ7 adding
+//Last UPDATE: Mmay 05, 2023 - CO AQI value to database
 
 #include <WiFi.h>
 #include <WiFiClientSecure.h>
@@ -247,6 +248,44 @@ aqicalc:
   return aqi;
 }
 
+int calcAQICO(float co_ppm){
+  int CO_AQI;
+  if (co_ppm >= 0 && co_ppm <= 4.4) {
+    CO_AQI = map(co_ppm, 0, 4.4, 0, 50);
+  } else if (co_ppm > 4.4 && co_ppm <= 9.4) {
+    CO_AQI = map(co_ppm, 4.5, 9.4, 51, 100);
+  } else if (co_ppm > 9.4 && co_ppm <= 12.4) {
+    CO_AQI = map(co_ppm, 9.5, 12.4, 101, 150);
+  } else if (co_ppm > 12.4 && co_ppm <= 15.4) {
+    CO_AQI = map(co_ppm, 12.5, 15.4, 151, 200);
+  } else if (co_ppm > 15.4 && co_ppm <= 30.4) {
+    CO_AQI = map(co_ppm, 15.5, 30.4, 201, 300);
+  } else if (co_ppm > 30.4 && co_ppm <= 40.4) {
+    CO_AQI = map(co_ppm, 30.5, 40.4, 301, 400);
+  } else if (co_ppm > 40.4 && co_ppm <= 50.4) {
+    CO_AQI = map(co_ppm, 40.5, 50.4, 401, 500);
+  } else {
+    CO_AQI = 500; // hazardous
+  }
+  return CO_AQI;
+}
+
+const char* get_CO_aqi_status(int CO_aqival){
+  if (CO_aqival <= 50) {
+    return "Good";
+  } else if (CO_aqival >= 51 && CO_aqival <= 100) {
+    return "Moderate";
+  } else if (CO_aqival >= 101 && CO_aqival <= 150) {
+    return "Unhealthy for Sensitive Groups";
+  } else if (CO_aqival >= 151 && CO_aqival <= 200) {
+    return "Unhealthy";
+  } else if (CO_aqival >= 201 && CO_aqival <= 300) {
+    return "Very Unhealthy";
+  } else if (CO_aqival >= 300) {
+    return "Hazardous";
+  }
+}
+
 const char* get_aqi_status(int PM25_aqival) {
   if (PM25_aqival <= 50) {
     return "Good";
@@ -354,12 +393,17 @@ void loop() {
   int PM25_aqival = calcAQI25(PM2_5);
   Serial.print("\nPM2.5 AQI value: ");
   Serial.println(PM25_aqival);
-
   const char* aqi_status = get_aqi_status(PM25_aqival);
   Serial.print("AQI Status: ");
   Serial.println(aqi_status);
   Serial.print("CO Concentration (PPM): ");
   Serial.println(CO_ppm);
+  int CO_aqival = calcAQICO(CO_ppm);
+  Serial.print("\nCO AQI value: ");
+  Serial.println(CO_aqival);
+  const char* CO_aqi_status = get_CO_aqi_status(CO_aqival);
+  Serial.print("AQI Status: ");
+  Serial.println(CO_aqi_status);
   Serial.println();
 
   //Check WiFi connection status
@@ -375,7 +419,7 @@ void loop() {
     https.addHeader("Content-Type", "application/x-www-form-urlencoded");
 
     // Prepare your HTTP POST request data
-    String httpRequestData = "api_key=" + apiKeyValue + "&PM1=" + PM1 + "&PM2_5=" + PM2_5 + "&PM10=" + PM10 + "&temperature=" + temperature + "&humidity=" + humidity + "&CO_ppm=" + CO_ppm + "&PM25_aqival=" + PM25_aqival + "&aqi_status=" + aqi_status + "";
+    String httpRequestData = "api_key=" + apiKeyValue + "&PM1=" + PM1 + "&PM2_5=" + PM2_5 + "&PM10=" + PM10 + "&temperature=" + temperature + "&humidity=" + humidity + "&CO_ppm=" + CO_ppm + "&CO_aqival=" + CO_aqival + "&CO_aqi_status=" + CO_aqi_status + "&PM25_aqival=" + PM25_aqival + "&aqi_status=" + aqi_status + "";
     Serial.print("httpRequestData: ");
     Serial.println(httpRequestData);
 
