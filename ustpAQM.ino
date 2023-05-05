@@ -7,8 +7,7 @@
   Wendam, Sandra                
 */
 
-//Last Line Edit: April 27, 2023 - MQ7 adding
-//Last UPDATE: Mmay 05, 2023 - CO AQI value to database
+//Last UPDATE: April 27, 2023 - MQ7 adding
 
 #include <WiFi.h>
 #include <WiFiClientSecure.h>
@@ -248,26 +247,59 @@ aqicalc:
   return aqi;
 }
 
-int calcAQICO(float co_ppm){
-  int CO_AQI;
-  if (co_ppm >= 0 && co_ppm <= 4.4) {
-    CO_AQI = map(co_ppm, 0, 4.4, 0, 50);
-  } else if (co_ppm > 4.4 && co_ppm <= 9.4) {
-    CO_AQI = map(co_ppm, 4.5, 9.4, 51, 100);
-  } else if (co_ppm > 9.4 && co_ppm <= 12.4) {
-    CO_AQI = map(co_ppm, 9.5, 12.4, 101, 150);
-  } else if (co_ppm > 12.4 && co_ppm <= 15.4) {
-    CO_AQI = map(co_ppm, 12.5, 15.4, 151, 200);
-  } else if (co_ppm > 15.4 && co_ppm <= 30.4) {
-    CO_AQI = map(co_ppm, 15.5, 30.4, 201, 300);
-  } else if (co_ppm > 30.4 && co_ppm <= 40.4) {
-    CO_AQI = map(co_ppm, 30.5, 40.4, 301, 400);
-  } else if (co_ppm > 40.4 && co_ppm <= 50.4) {
-    CO_AQI = map(co_ppm, 40.5, 50.4, 401, 500);
+int calcAQICO(float coaqi){
+  // Uses formula AQI = ( (pobs - pmin) x (aqimax - aqimin) ) / (pmax - pmin)  + aqimin
+  float pmin, pmax, amin, amax;
+
+  if (coaqi <= 4.5) {
+    pmin = 0;
+    pmax = 4.5;
+    amin = 0;
+    amax = 50;
+    goto coaqicalc;
+  } else if (coaqi <= 9.5) {
+    pmin = 4.5;
+    pmax = 9.5;
+    amin = 50;
+    amax = 100;
+    goto coaqicalc;
+  } else if (coaqi <= 12.5) {
+    pmin = 9.5;
+    pmax = 12.5;
+    amin = 100;
+    amax = 150;
+    goto coaqicalc;
+  } else if (coaqi <= 15.5) {
+    pmin = 12.5;
+    pmax = 15.5;
+    amin = 150;
+    amax = 200;
+    goto coaqicalc;
+  } else if (coaqi <= 30.5) {
+    pmin = 15.5;
+    pmax = 30.5;
+    amin = 200;
+    amax = 300;
+    goto coaqicalc;
+  } else if (coaqi <= 40.5) {
+    pmin = 30.5;
+    pmax = 40.5;
+    amin = 300;
+    amax = 400;
+    goto coaqicalc;
+  } else if (coaqi <= 50.5) {
+    pmin = 40.5;
+    pmax = 50.5;
+    amin = 400;
+    amax = 500;
+    goto coaqicalc;
   } else {
-    CO_AQI = 500; // hazardous
+    return 999;
   }
-  return CO_AQI;
+
+coaqicalc:
+  float aqico = (((coaqi - pmin) * (amax - amin)) / (pmax - pmin)) + amin;
+  return aqico;
 }
 
 const char* get_CO_aqi_status(int CO_aqival){
