@@ -7,7 +7,7 @@
   Wendam, Sandra                
 */
 
-//Last UPDATE: April 27, 2023 - MQ7 adding
+//Last UPDATE: May 08, 2023 - System Integration
 
 #include <WiFi.h>
 #include <WiFiClientSecure.h>
@@ -18,8 +18,8 @@
 
 //Definitions
 #define placa "ESP32 "
-#define Voltage_Resolution 5
-#define pin 34 //Analog input 0 of your arduino
+#define Voltage_Resolution 3.3
+#define pin 32//Analog input 0 of your arduino
 #define type "MQ-7" //MQ7
 #define ADC_Bit_Resolution 12 // For arduino UNO/MEGA/NANO
 #define RatioMQ7CleanAir 27.5 //RS / R0 = 27.5 ppm 
@@ -33,8 +33,8 @@
 MQUnifiedsensor MQ7(placa, Voltage_Resolution, ADC_Bit_Resolution, pin, type);
 DHT dht(DHT11PIN, DHT11);
 
-const char* ssid = "Denzel_HomeNet";
-const char* password = "DenzelHomeNet2022";
+const char* ssid = "fbf041";
+const char* password = "244222521";
 const char* host = "ustpapm.000webhostapp.com";  // hostname
 
 // REPLACE with your Domain name and URL path or IP address with path
@@ -391,8 +391,8 @@ void setup() {
   MQ7.setR0(calcR0/10);
   Serial.println("  done!.");
   
-  if(isinf(calcR0)) {Serial.println("Warning: Conection issue, R0 is infinite (Open circuit detected) please check your wiring and supply"); while(1);}
-  if(calcR0 == 0){Serial.println("Warning: Conection issue found, R0 is zero (Analog pin shorts to ground) please check your wiring and supply"); while(1);}
+  //if(isinf(calcR0)) {Serial.println("Warning: Conection issue, R0 is infinite (Open circuit detected) please check your wiring and supply"); while(1);}
+  //if(calcR0 == 0){Serial.println("Warning: Conection issue found, R0 is zero (Analog pin shorts to ground) please check your wiring and supply"); while(1);}
   /*****************************  MQ CAlibration ********************************************/ 
   MQ7.serialDebug(true);
 
@@ -400,8 +400,8 @@ void setup() {
   connect_WiFi();
 
 
-  Serial.println("\nAll sensors initialized, 5-second warm-up delay before first reading");
-  delay(5000);
+  Serial.println("\nAll sensors initialized, 10-seconds warm-up delay before first reading");
+  delay(10000);
 }
 
 void loop() {
@@ -428,10 +428,10 @@ void loop() {
   const char* aqi_status = get_aqi_status(PM25_aqival);
   Serial.print("AQI Status: ");
   Serial.println(aqi_status);
-  Serial.print("CO Concentration (PPM): ");
+  Serial.print("\nCO Concentration (PPM): ");
   Serial.println(CO_ppm);
   int CO_aqival = calcAQICO(CO_ppm);
-  Serial.print("\nCO AQI value: ");
+  Serial.print("CO AQI value: ");
   Serial.println(CO_aqival);
   const char* CO_aqi_status = get_CO_aqi_status(CO_aqival);
   Serial.print("AQI Status: ");
@@ -472,6 +472,7 @@ void loop() {
   }
   Serial.println();
   Serial.println("closing connection");
+  
   //flush the serial buffer
   while (Serial.available()) {
     Serial.read();
@@ -489,7 +490,7 @@ void loop() {
     mqSerial.begin(9600);
   }
 
-  delay(20000);  //20 seconds delay before sending new data
+  delay(25000);  //25 seconds delay before sending new data
 }
 
 void reboot() {
